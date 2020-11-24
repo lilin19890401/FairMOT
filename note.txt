@@ -1,0 +1,36 @@
+
+2. clone and build original DCN2
+You may fail to compile DCNv2 when using Pytorch 1.x, because torch.utils.ffi is deprecated. Then replace DCNv2 using the original repo and [Solved] dcn_v2_cuda.obj : error LNK2001: unresolved external symbol state caused by extern THCState *state; by modifing the line DCNv2/blob/master/src/cuda/dcn_v2_cuda.cu#L11:
+
+//extern THCState *state;                           
+THCState *state = at::globalContext().lazyInitCUDA();   // Modified
+cd CenterNet\src\lib\models\networks
+rm -rf DCNv2
+git clone https://github.com/CharlesShang/DCNv2
+cd DCNv2
+
+vim cuda/dcn_va_cuda.cu
+"""
+# extern THCState *state;
+THCState *state = at::globalContext().lazyInitCUDA();
+"""
+
+python setup.py build develop
+
+
+3. test
+cd CenterNet/src
+python demo.py --task ctdet --demo ../images/17790319373_bd19b24cfc_k.jpg --load_model ../models/ctdet_coco_dla_2x.pth --debug 2
+python demo.py --task multi_pose --demo ../images/17790319373_bd19b24cfc_k.jpg --load_model ../models/multi_pose_dla_3x.pth --debug 2
+
+
+
+
+4. 运行中出现 “This application failed to start beacuse no QT platform plugin could be initialized. Reinstalling the application may fix this problem”.
+分析：找不到或加载的插件，两种情况1：没有安装相关软件或库。2：安装了，但是在调用时没有相关路径。
+我查看了Qt的安装包：有
+所以问题应该就是路径设置的问题了。网上相关问题很多，主要就是需要添加其在环境变量中，步骤如下：
+变量名：QT_QPA_PLATFORM_PLUGIN_PATH
+plugins变量值：C:\Anaconda3\envs\torch1.0.1\Library\plugins
+
+

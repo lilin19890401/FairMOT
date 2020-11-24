@@ -1,1 +1,8 @@
 .idea
+weights
+__pycache__/
+src/data/2DMOT2015
+src/data/2DMOT2015Labels
+thirdparty/cython_bbox-0.1.3
+videos/frame
+videos/results.txt

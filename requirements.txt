@@ -1,7 +1,6 @@
 yacs
 opencv-python
-cython
-cython-bbox
+#cython-bbox   自己安装
 scipy
 numba
 progress
@@ -10,5 +9,5 @@ numba
 matplotlib
 lap
 openpyxl
-Pillow
+Pillow==6.2.2
 tensorboardX

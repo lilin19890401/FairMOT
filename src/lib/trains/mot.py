@@ -3,17 +3,16 @@ from __future__ import division
 from __future__ import print_function
 
 import math
+
 import torch
-import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
-import torchvision
-
-from models.losses import FocalLoss, TripletLoss
-from models.losses import RegL1Loss, RegLoss, NormRegL1Loss, RegWeightedL1Loss
 from models.decode import mot_decode
+from models.losses import FocalLoss
+from models.losses import RegL1Loss, RegLoss, NormRegL1Loss, RegWeightedL1Loss
 from models.utils import _sigmoid, _tranpose_and_gather_feat
 from utils.post_process import ctdet_post_process
+
 from .base_trainer import BaseTrainer
 
 
@@ -46,9 +45,16 @@ class MotLoss(torch.nn.Module):
 
             hm_loss += self.crit(output['hm'], batch['hm']) / opt.num_stacks
             if opt.wh_weight > 0:
-                wh_loss += self.crit_reg(
-                    output['wh'], batch['reg_mask'],
-                    batch['ind'], batch['wh']) / opt.num_stacks
+                if opt.dense_wh:
+                    mask_weight = batch['dense_wh_mask'].sum() + 1e-4
+                    wh_loss += (
+                                   self.crit_wh(output['wh'] * batch['dense_wh_mask'],
+                                                batch['dense_wh'] * batch['dense_wh_mask']) /
+                                   mask_weight) / opt.num_stacks
+                else:
+                    wh_loss += self.crit_reg(
+                        output['wh'], batch['reg_mask'],
+                        batch['ind'], batch['wh']) / opt.num_stacks
 
             if opt.reg_offset and opt.off_weight > 0:
                 off_loss += self.crit_reg(output['reg'], batch['reg_mask'],
@@ -59,9 +65,9 @@ class MotLoss(torch.nn.Module):
                 id_head = id_head[batch['reg_mask'] > 0].contiguous()
                 id_head = self.emb_scale * F.normalize(id_head)
                 id_target = batch['ids'][batch['reg_mask'] > 0]
-
                 id_output = self.classifier(id_head).contiguous()
                 id_loss += self.IDLoss(id_output, id_target)
+                #id_loss += self.IDLoss(id_output, id_target) + self.TriLoss(id_head, id_target)
 
         #loss = opt.hm_weight * hm_loss + opt.wh_weight * wh_loss + opt.off_weight * off_loss + opt.id_weight * id_loss
 
@@ -69,7 +75,6 @@ class MotLoss(torch.nn.Module):
 
         loss = torch.exp(-self.s_det) * det_loss + torch.exp(-self.s_id) * id_loss + (self.s_det + self.s_id)
         loss *= 0.5
-        #loss = det_loss
 
         #print(loss, hm_loss, wh_loss, off_loss, id_loss)
 

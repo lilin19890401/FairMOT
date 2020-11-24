@@ -1,12 +1,10 @@
-import cv2
+import lap
 import numpy as np
 import scipy
-import lap
-from scipy.spatial.distance import cdist
-
 from cython_bbox import bbox_overlaps as bbox_ious
+from scipy.spatial.distance import cdist
 from tracking_utils import kalman_filter
-import time
+
 
 def merge_matches(m1, m2, shape):
     O,P,Q = shape
@@ -105,7 +103,7 @@ def embedding_distance(tracks, detections, metric='cosine'):
     #for i, track in enumerate(tracks):
         #cost_matrix[i, :] = np.maximum(0.0, cdist(track.smooth_feat.reshape(1,-1), det_features, metric))
     track_features = np.asarray([track.smooth_feat for track in tracks], dtype=np.float)
-    cost_matrix = np.maximum(0.0, cdist(track_features, det_features, metric))  # Nomalized features
+    cost_matrix = np.maximum(0.0, cdist(track_features, det_features, metric))  # Nomalized features // 计算新检测目标和tracked_tracker的cosine距离
     return cost_matrix
 
 
@@ -133,4 +131,5 @@ def fuse_motion(kf, cost_matrix, tracks, detections, only_position=False, lambda
             track.mean, track.covariance, measurements, only_position, metric='maha')
         cost_matrix[row, gating_distance > gating_threshold] = np.inf
         cost_matrix[row] = lambda_ * cost_matrix[row] + (1 - lambda_) * gating_distance
+
     return cost_matrix

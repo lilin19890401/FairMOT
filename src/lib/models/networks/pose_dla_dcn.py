@@ -2,18 +2,17 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
-import math
 import logging
-import numpy as np
+import math
 from os.path import join
 
+import numpy as np
 import torch
-from torch import nn
 import torch.nn.functional as F
 import torch.utils.model_zoo as model_zoo
+from torch import nn
 
-from dcn_v2 import DCN
+from .DCNv2_new.dcn_v2 import DCN
 
 BN_MOMENTUM = 0.1
 logger = logging.getLogger(__name__)
@@ -484,7 +483,8 @@ class DLASeg(nn.Module):
 
 def get_pose_net(num_layers, heads, head_conv=256, down_ratio=4):
   model = DLASeg('dla{}'.format(num_layers), heads,
-                 pretrained=True,
+                 #pretrained=True,
+                 pretrained=False,
                  down_ratio=down_ratio,
                  final_kernel=1,
                  last_level=5,
