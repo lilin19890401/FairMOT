@@ -244,19 +244,19 @@ class JDETracker(object):
             id_feature = F.normalize(id_feature, dim=1)
 
             reg = output['reg'] if self.opt.reg_offset else None
-            #检测的det res(bb, score, clses)以及特征得分图的排序的有效index
+            # 检测的det res(bb, score, clses)以及特征得分图的排序的有效index
             dets, inds = mot_decode(hm, wh, reg=reg, cat_spec_wh=self.opt.cat_spec_wh, K=self.opt.K)
-            #根据 index 选取 有效的特征id
+            # 根据 index 选取 有效的特征id
             id_feature = _tranpose_and_gather_feat(id_feature, inds)
-            #去除那些维度大小为1的维度
+            # 去除那些维度大小为1的维度
             id_feature = id_feature.squeeze(0)
             id_feature = id_feature.cpu().numpy()
 
-        #对检测结果做后处理
+        # 对检测结果做后处理
         dets = self.post_process(dets, meta)
         dets = self.merge_outputs([dets])[1]
 
-        #阈值过滤
+        # 检测置信度阈值过滤
         remain_inds = dets[:, 4] > self.opt.conf_thres
         dets = dets[remain_inds]
         id_feature = id_feature[remain_inds]
@@ -306,7 +306,7 @@ class JDETracker(object):
         dists = matching.embedding_distance(strack_pool, detections)    # 计算新检测出来的目标detections和strack_pool之间的cosine距离
         #dists = matching.gate_cost_matrix(self.kalman_filter, dists, strack_pool, detections)
         dists = matching.fuse_motion(self.kalman_filter, dists, strack_pool, detections)    # 利用卡尔曼计算strack_pool和detection的距离cost，并将大于距离阈值的外观cost矩阵赋值为inf（距离约束）
-        matches, u_track, u_detection = matching.linear_assignment(dists, thresh=0.7)       # LAPJV匹配 // 将跟踪框和检测框进行匹配 // u_track是未匹配的tracker的索引，u_detection是未匹配的检测目标索引
+        matches, u_track, u_detection = matching.linear_assignment(dists, thresh=0.7)       # LAPJV匹配 // 将跟踪框和检测框进行匹配 // matches是匹配对索引，u_track是未匹配的tracker的索引，u_detection是未匹配的检测目标索引
 
         for itracked, idet in matches:                                  # matches:63*2 , 63:匹配成对个数，2：第一列为tracked_tracker索引，第二列为detection的索引
             track = strack_pool[itracked]
