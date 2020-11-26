@@ -237,16 +237,16 @@ class JDETracker(object):
 
         ''' Step 1: Network forward, get detections & embeddings'''
         with torch.no_grad():
-            output = self.model(im_blob)[-1]
-            hm = output['hm'].sigmoid_()
-            wh = output['wh']
-            id_feature = output['id']
+            output = self.model(im_blob)[-1]    # 检测网络的检测结果
+            hm = output['hm'].sigmoid_()        # 检测网络输出的热力图
+            wh = output['wh']                   # 检测网络输出的目标宽高
+            id_feature = output['id']           # 检测网络输出的Re-ID特征
             id_feature = F.normalize(id_feature, dim=1)
 
-            reg = output['reg'] if self.opt.reg_offset else None
-            # 检测的det res(bb, score, clses)以及特征得分图的排序的有效index
+            reg = output['reg'] if self.opt.reg_offset else None    # 检测网络输出的目标中心offset
+            # 检测的det res(bb, score, clses, ID)以及特征得分图的排序的有效index
             dets, inds = mot_decode(hm, wh, reg=reg, cat_spec_wh=self.opt.cat_spec_wh, K=self.opt.K)
-            # 根据 index 选取 有效的特征id
+            # 根据 index 选取 有效的Re-ID特征
             id_feature = _tranpose_and_gather_feat(id_feature, inds)
             # 去除那些维度大小为1的维度
             id_feature = id_feature.squeeze(0)
@@ -256,7 +256,7 @@ class JDETracker(object):
         dets = self.post_process(dets, meta)
         dets = self.merge_outputs([dets])[1]
 
-        # 检测置信度阈值过滤
+        # 检测置信度阈值过滤，得到有效的目标和对应的Re-ID特征
         remain_inds = dets[:, 4] > self.opt.conf_thres
         dets = dets[remain_inds]
         id_feature = id_feature[remain_inds]

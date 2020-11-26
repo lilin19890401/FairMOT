@@ -19,17 +19,17 @@ from .base_trainer import BaseTrainer
 class MotLoss(torch.nn.Module):
     def __init__(self, opt):
         super(MotLoss, self).__init__()
-        self.crit = torch.nn.MSELoss() if opt.mse_loss else FocalLoss()
+        self.crit = torch.nn.MSELoss() if opt.mse_loss else FocalLoss()             # 分类loss   中心点x,y offset loss   w,h回归loss
         self.crit_reg = RegL1Loss() if opt.reg_loss == 'l1' else \
             RegLoss() if opt.reg_loss == 'sl1' else None
         self.crit_wh = torch.nn.L1Loss(reduction='sum') if opt.dense_wh else \
             NormRegL1Loss() if opt.norm_wh else \
                 RegWeightedL1Loss() if opt.cat_spec_wh else self.crit_reg
         self.opt = opt
-        self.emb_dim = opt.reid_dim
-        self.nID = opt.nID
+        self.emb_dim = opt.reid_dim                                                 # reid特征长度
+        self.nID = opt.nID                                                          # 所有目标的ID数
         self.classifier = nn.Linear(self.emb_dim, self.nID)
-        self.IDLoss = nn.CrossEntropyLoss(ignore_index=-1)
+        self.IDLoss = nn.CrossEntropyLoss(ignore_index=-1)                          # Re-ID loss
         #self.TriLoss = TripletLoss()
         self.emb_scale = math.sqrt(2) * math.log(self.nID - 1)
         self.s_det = nn.Parameter(-1.85 * torch.ones(1))

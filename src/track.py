@@ -48,7 +48,7 @@ def write_results(filename, results, data_type):
 def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_image=True, frame_rate=30):
     if save_dir:
         mkdir_if_missing(save_dir)
-    tracker = JDETracker(opt, frame_rate=frame_rate)
+    tracker = JDETracker(opt, frame_rate=frame_rate)    # 定义JDE跟踪器
     timer = Timer()
     results = []
     frame_id = 0
@@ -59,7 +59,7 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
         # run tracking
         timer.tic()
         blob = torch.from_numpy(img).cuda().unsqueeze(0)
-        online_targets = tracker.update(blob, img0)
+        online_targets = tracker.update(blob, img0)     # 得到每一帧的实时检测结果和跟踪结果
         online_tlwhs = []
         online_ids = []
         for t in online_targets:

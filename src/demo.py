@@ -12,7 +12,7 @@ from tracking_utils.utils import mkdir_if_missing
 from tracking_utils.log import logger
 import datasets.dataset.jde as datasets
 from track import eval_seq
-
+import time
 
 logger.setLevel(logging.INFO)
 
@@ -36,6 +36,7 @@ def demo(opt):
 
 
 if __name__ == '__main__':
+    start = time.time()
     opt = opts().init()
     opt.task='mot'
     opt.load_model = '../weights/all_dla34.pth'
@@ -43,3 +44,5 @@ if __name__ == '__main__':
     opt.input_video = '../videos/MOT16-03.mp4'
     opt.output_root = '../videos/'
     demo(opt)
+    end = time.time()
+    print("cost time {}".format(end-start))
