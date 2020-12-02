@@ -37,7 +37,7 @@ def main(opt):
     logger = Logger(opt)
 
     os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpus_str
-    opt.device = torch.device('cuda' if opt.gpus[0] >= 0 else 'cpu')
+    opt.device = torch.device('cuda' if int(opt.gpus[0]) >= 0 else 'cpu')
 
     print('Creating model...')
     model = create_model(opt.arch, opt.heads, opt.head_conv)
@@ -94,4 +94,11 @@ def main(opt):
 if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = '0, 1'
     opt = opts().parse()
+
+    opt.task = 'mot'
+    opt.exp_id = 'all_dla34'
+    opt.gpus = '0'
+    opt.batch_size = 2
+    opt.load_model = r'D:\DeepLearning\ObjectTrackingMethod\FairMOT\PretrainedModels\ctdet_coco_dla_2x.pth'
+
     main(opt)

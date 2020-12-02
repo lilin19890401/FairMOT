@@ -43,6 +43,7 @@ if __name__ == '__main__':
     opt.conf_thres= 0.4
     opt.input_video = '../videos/MOT16-03.mp4'
     opt.output_root = '../videos/'
+    opt.arch = 'dla_34'
     demo(opt)
     end = time.time()
     print("cost time {}".format(end-start))

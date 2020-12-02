@@ -18,8 +18,8 @@ BN_MOMENTUM = 0.1
 logger = logging.getLogger(__name__)
 
 def get_model_url(data='imagenet', name='dla34', hash='ba72cf86'):
-    return join('http://dl.yf.io/dla/models', data, '{}-{}.pth'.format(name, hash))
-
+    #return join('http://dl.yf.io/dla/models', data, '{}-{}.pth'.format(name, hash))
+    return ('http://dl.yf.io/dla/models'+'/'+data+'/'+name+'-'+hash+'.pth')
 
 def conv3x3(in_planes, out_planes, stride=1):
     "3x3 convolution with padding"
@@ -296,6 +296,7 @@ class DLA(nn.Module):
             model_weights = torch.load(data + name)
         else:
             model_url = get_model_url(data, name, hash)
+            print("model_url:{}".format(model_url))
             model_weights = model_zoo.load_url(model_url)
         num_classes = len(model_weights[list(model_weights.keys())[-1]])
         self.fc = nn.Conv2d(
@@ -440,7 +441,11 @@ class DLASeg(nn.Module):
 
         self.ida_up = IDAUp(out_channel, channels[self.first_level:self.last_level], 
                             [2 ** i for i in range(self.last_level - self.first_level)])
-        
+
+        """
+        在将input经过backbone（DLA-34）之后，对于每个head结构，经过两层卷积得到输出（head_conv=256），
+        这里对fc的的初始化权重及heat map的初始bias进行设置
+        """
         self.heads = heads
         for head in self.heads:
             classes = self.heads[head]
@@ -483,8 +488,8 @@ class DLASeg(nn.Module):
 
 def get_pose_net(num_layers, heads, head_conv=256, down_ratio=4):
   model = DLASeg('dla{}'.format(num_layers), heads,
-                 #pretrained=True,
-                 pretrained=False,
+                 pretrained=True,
+                 #pretrained=False,
                  down_ratio=down_ratio,
                  final_kernel=1,
                  last_level=5,

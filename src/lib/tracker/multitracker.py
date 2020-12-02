@@ -235,7 +235,9 @@ class JDETracker(object):
                 'out_height': inp_height // self.opt.down_ratio,
                 'out_width': inp_width // self.opt.down_ratio}
 
-        ''' Step 1: Network forward, get detections & embeddings'''
+        ''' Step 1: Network forward, get detections & embeddings
+        这里首先通过backbone获取到对应的各个head的输出，接着进行后处理及置信度过滤（NMS），将新的目标加入轨迹
+        '''
         with torch.no_grad():
             output = self.model(im_blob)[-1]    # 检测网络的检测结果
             hm = output['hm'].sigmoid_()        # 检测网络输出的热力图

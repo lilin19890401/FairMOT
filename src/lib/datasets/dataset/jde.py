@@ -345,6 +345,11 @@ def collate_fn(batch):
     return imgs, filled_labels, paths, sizes, labels_len.unsqueeze(1)
 
 
+"""
+首先为什么要通过高斯分布来对中心点进行处理，而不是直接将中心点标为1，其余点标为0?
+这是由于中心点周围的点一样可以较好地描述行人，所以在一定范围（radius）内的点，都有较好的效果，
+所以作者以BB中心点为核，radius为半径进行高斯分布，最终得到heat map
+"""
 class JointDataset(LoadImagesAndLabels):  # for training
     default_resolution = [1088, 608]
     mean = None
@@ -423,12 +428,12 @@ class JointDataset(LoadImagesAndLabels):  # for training
                 labels[i, 1] += self.tid_start_index[ds]        # 多数据集，处理reid的index
 
         output_h = imgs.shape[1] // self.opt.down_ratio
-        output_w = imgs.shape[2] // self.opt.down_ratio
-        num_classes = self.num_classes
-        num_objs = labels.shape[0]
-        hm = np.zeros((num_classes, output_h, output_w), dtype=np.float32)
-        wh = np.zeros((self.max_objs, 2), dtype=np.float32)
-        reg = np.zeros((self.max_objs, 2), dtype=np.float32)
+        output_w = imgs.shape[2] // self.opt.down_ratio         # 进行下采样
+        num_classes = self.num_classes                          # 目标类别数
+        num_objs = labels.shape[0]                              # 目标个数
+        hm = np.zeros((num_classes, output_h, output_w), dtype=np.float32)  # heatmap
+        wh = np.zeros((self.max_objs, 2), dtype=np.float32)                 # wh
+        reg = np.zeros((self.max_objs, 2), dtype=np.float32)                # xy
         ind = np.zeros((self.max_objs, ), dtype=np.int64)
         reg_mask = np.zeros((self.max_objs, ), dtype=np.uint8)
         ids = np.zeros((self.max_objs, ), dtype=np.int64)
@@ -440,17 +445,17 @@ class JointDataset(LoadImagesAndLabels):  # for training
             cls_id = int(label[0])
             bbox[[0, 2]] = bbox[[0, 2]] * output_w
             bbox[[1, 3]] = bbox[[1, 3]] * output_h
-            bbox[0] = np.clip(bbox[0], 0, output_w - 1)
+            bbox[0] = np.clip(bbox[0], 0, output_w - 1)         # 设置bbox坐标
             bbox[1] = np.clip(bbox[1], 0, output_h - 1)
             h = bbox[3]
             w = bbox[2]
 
             if h > 0 and w > 0:
-                radius = gaussian_radius((math.ceil(h), math.ceil(w)))
+                radius = gaussian_radius((math.ceil(h), math.ceil(w)))      # 根据feature map的大小来计算高斯半径
                 radius = max(0, int(radius))
                 radius = self.opt.hm_gauss if self.opt.mse_loss else radius
                 ct = np.array(
-                    [bbox[0], bbox[1]], dtype=np.float32)
+                    [bbox[0], bbox[1]], dtype=np.float32)                   # 高斯核中心
                 ct_int = ct.astype(np.int32)
                 draw_gaussian(hm[cls_id], ct_int, radius)
                 wh[k] = 1. * w, 1. * h

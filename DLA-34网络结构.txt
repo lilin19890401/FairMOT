@@ -1,0 +1,104 @@
+1. Encoder-decoder 部分
+网络中，这是backbone network部分，主干网络为DLA-34(34层的DLA),最终input(HxW)->output(H/4xW/4)
+Encoder部分（base/DLA）：
+(1) Base_layer层
+Conv2d()    		3*16*7*7
+BN
+Relu
+(2)level0层			
+Conv2d()			16*16*3*3
+BN
+Relu
+(3)level1层			
+Conv2d()			16*32*3*3	stride=2  padding=1
+BN
+Relu
+(4)level2层
+tree1: conv1->bn1->relu->conv2->bn2	32*64*3*3 stride=2 padding=1    64*64*3*3 stride=1 padding=1
+tree2: conv1->bn1->relu->conv2->bn2 64*64*3*3 stride=1 padding=1	64*64*3*3 stride=1 padding=1
+root:  conv->bn->relu 128*64*1*1 stride=1 padding=0
+downsample: maxpool2d  kernelsize=2 stride=1
+project: conv->bn 32*64*1*1 stride=1
+
+(5)level3层
+tree1: conv1->bn1->relu->conv2->bn2	64*128*3*3     128*128*3*3
+tree2: conv1->bn1->relu->conv2->bn2	128*128*3*3    128*128*3*3
+root:  conv->bn->relu 256*128*1*1 stride=1 padding=0
+downsample: maxpool2d  kernelsize=2 stride=2 padding=0
+project: conv->bn 64*128*1*1 stride=1
+
+tree1: conv1->bn1->relu->conv2->bn2	128*128*3*3    128*128*3*3
+tree2: conv1->bn1->relu->conv2->bn2	128*128*3*3    128*128*3*3
+root:  conv->bn->relu 448*128*1*1 stride=1 padding=0
+
+downsample: maxpool2d  kernelsize=2 stride=2
+project: conv->bn 64*128*1*1 stride=1
+
+(6)level4层
+tree1: conv1->bn1->relu->conv2->bn2	128*256*3*3 stride=2 padding=1     256*256*3*3 stride=1 padding=1     
+tree2: conv1->bn1->relu->conv2->bn2	256*256*3*3 stride=1 padding=1     256*256*3*3 stride=1 padding=1 
+root:  conv->bn->relu 512*256*1*1 stride=1 padding=0
+downsample: maxpool2d  kernelsize=2 stride=2 padding=0
+project: conv->bn 128*256*1*1 stride=1
+
+tree1: conv1->bn1->relu->conv2->bn2	256*256*3*3 stride=1 padding=1     256*256*3*3 stride=1 padding=1   
+tree2: conv1->bn1->relu->conv2->bn2	256*256*3*3 stride=1 padding=1     256*256*3*3 stride=1 padding=1 
+root:  conv->bn->relu 896*256*1*1 stride=1 padding=0
+downsample: maxpool2d  kernelsize=2 stride=2 padding=0
+project: conv->bn 128*256*1*1 stride=1
+
+(7)level5层
+tree1: conv1->bn1->relu->conv2->bn2	256*512*3*3 stride=2 padding=1     512*512*3*3 stride=1 padding=1  
+tree2: conv1->bn1->relu->conv2->bn2	256*512*3*3 stride=1 padding=1     512*512*3*3 stride=1 padding=1  
+root:  conv->bn->relu 1280*512*1*1 stride=1 padding=0
+downsample: maxpool2d  kernelsize=2 stride=2 padding=0
+project: conv->bn 256*5121*1*1 stride=1
+
+Encoder部分的网络结构类似金字塔结构（或者树形结构），实现不同block，不同深度之间的特征融合。
+
+
+
+
+decoder 部分(dlA-up/DLAup)：decoder 部分实际就是反卷积上采样的过程，实现输出为原图尺寸的1/4。
+ida_0:
+proj_1
+node_1
+up_1
+
+ida_1:
+proj_1
+node_1
+up_1
+proj_2
+node_2
+up_2
+
+ida_2:
+proj_1
+node_1
+up_1
+proj_2
+node_2
+up_2
+proj_3
+node_3
+up_3
+
+
+
+proj_1
+node_1
+up_1
+proj_2
+node_2
+up_2
+
+Proj结构为：BN->Relu->conv;
+Up结构为：convTranspose2d;
+node结构为：BN->Relu->conv;
+
+2. detection+Re-ID
+Encoder-decoder 部分之后，并行的接入4部分，分别为：{hm,wh,reg,id}
+其中，这四部分结构均为：con2d(64*256*3*3卷积)->Relu->con2d(256*class卷积)
+
+每个部分为一个任务，继而每个任务，需要加一个loss约束。

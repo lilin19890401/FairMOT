@@ -92,6 +92,10 @@ def crop(img, center, scale, output_size, rot=0):
     return dst_img
 
 
+"""
+根据目标尺寸算一个自适应高斯核半径
+核心思路就是分别考虑角点外切，内切的边界情况得到三个半径，取其最小值
+"""
 def gaussian_radius(det_size, min_overlap=0.7):
   height, width = det_size
 
@@ -123,6 +127,7 @@ def gaussian2D(shape, sigma=1):
     h[h < np.finfo(h.dtype).eps * h.max()] = 0
     return h
 
+# 绘制高斯分布
 def draw_umich_gaussian(heatmap, center, radius, k=1):
   diameter = 2 * radius + 1
   gaussian = gaussian2D((diameter, diameter), sigma=diameter / 6)
@@ -171,7 +176,7 @@ def draw_dense_reg(regmap, heatmap, center, value, radius, is_offset=False):
   regmap[:, y - top:y + bottom, x - left:x + right] = masked_regmap
   return regmap
 
-
+# 全图构造heatmap
 def draw_msra_gaussian(heatmap, center, sigma):
   tmp_size = sigma * 3
   mu_x = int(center[0] + 0.5)
