@@ -2,6 +2,7 @@
 weights
 PretrainedModels
 dataset
+exp
 __pycache__/
 src/data/2DMOT2015
 src/data/2DMOT2015Labels
