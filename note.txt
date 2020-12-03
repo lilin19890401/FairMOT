@@ -34,3 +34,38 @@ python demo.py --task multi_pose --demo ../images/17790319373_bd19b24cfc_k.jpg -
 plugins变量值：C:\Anaconda3\envs\torch1.0.1\Library\plugins
 
 
+5. 在编译DCNv2_new时，python setup.py build develop 出现
+错误1：C:Anaconda3\envs\torch1.2.0\lib\site-packages\torch\utils\cpp_extension.py:189: UserWarning: Error checking compiler version for cl: [WinError 2] 系统找不到指定的文件。
+
+答：将Visual Studio中cl.exe所在的目录添加到系统变量中的Path变量，即可解决问题，例如：C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64加入系统路径
+
+错误2：:C:\Anaconda3\envs\torch1.2.0\lib\site-packages\torch\utils\cpp_extension.py:189: UserWarning: Error checking compiler version for cl: 'utf-8' codec can't decode byte 0xd3 in position 0: invalid continuation byte
+答：打开cpp_extension.py，把编码改成' gbk'
+
+try:
+        if sys.platform.startswith('linux'):
+            minimum_required_version = MINIMUM_GCC_VERSION
+            version = subprocess.check_output([compiler, '-dumpfullversion', '-dumpversion'])
+            version = version.decode().strip().split('.')
+        else:
+            print("----windows operation system")
+            minimum_required_version = MINIMUM_MSVC_VERSION
+            compiler_info = subprocess.check_output(compiler, stderr=subprocess.STDOUT)
+            # the default decode is 'utf8', since cl.exe will return Chinese, so ' gbk'
+            #match = re.search(r'(\d+)\.(\d+)\.(\d+)', compiler_info.decode().strip())
+            print("----compiler_info: ", compiler_info.decode(' gbk'))
+            match = re.search(r'(\d+)\.(\d+)\.(\d+)', compiler_info.decode(' gbk').strip())
+            print("----match: ", match)
+            version = (0, 0, 0) if match is None else match.groups()
+    except Exception:
+        _, error, _ = sys.exc_info()
+        warnings.warn('Error checking compiler version for {}: {}'.format(compiler, error))
+        return False
+		
+
+微软把这个cl.exe的运行输出也中文化了，而cpp_extension.py中compiler_info = subprocess.check_output(compiler, stderr=subprocess.STDOUT)，要正确识别compiler，就必须使用' gbk'编码，而而python默认的情况下使用的正是utf-8，
+使用utf-8编码时是认不出来中文的。当然，如果你换系统了，在采用utf8的情况下，别忘记改回来。
+
+
+6. 编译DCNv2网络：error: command 'C:\\Program Files\\NVIDIAGPUComputingToolkit\\CUDA\\v10.0\\bin\\nvcc.exe' failed with exit status 2
+答： 替换C:\Anaconda3\envs\torch1.2.0\Lib\site-packages\torch\include\c10\util中的 flat_hash_map.h 文件
