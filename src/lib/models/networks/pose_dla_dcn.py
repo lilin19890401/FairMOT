@@ -445,6 +445,10 @@ class DLASeg(nn.Module):
         """
         在将input经过backbone（DLA-34）之后，对于每个head结构，经过两层卷积得到输出（head_conv=256），
         这里对fc的的初始化权重及heat map的初始bias进行设置
+        hm:conv2d(64,256,3,3),relu(),conv2d(256,n_category,1,1),分支输出: n_category×152×572，一个类别一个通道，其中每个点的值表示：是目标的概率有多大
+        wh:conv2d(64,256,3,3),relu(),conv2d(256,2,1,1),分支输出：2×152×572,所有类别用共同的预测宽度和高度
+        reg:conv2d(64,256,3,3),relu(),conv2d(256,2,1,1),分支输出：2×152×572,每个点的两个offset值表示，当前index为目标时hm输出位置的偏差
+        id:conv2d(64,256,3,3),relu(),conv2d(256,512,1,1),分支输出：512×152×572,当前index为目标时hm输出位置ReID特征
         """
         self.heads = heads
         for head in self.heads:
