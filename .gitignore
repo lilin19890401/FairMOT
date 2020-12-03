@@ -3,7 +3,7 @@ weights
 PretrainedModels
 dataset
 exp
-__pycache__/
+__pycache__
 src/data/2DMOT2015
 src/data/2DMOT2015Labels
 thirdparty/cython_bbox-0.1.3
