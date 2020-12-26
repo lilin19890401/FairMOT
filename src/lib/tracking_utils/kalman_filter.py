@@ -91,7 +91,6 @@ class KalmanFilter(object):
 
     def predict(self, mean, covariance):
         """Run Kalman filter prediction step.
-
         Parameters
         ----------
         mean : ndarray
@@ -136,7 +135,7 @@ class KalmanFilter(object):
             self._std_weight_velocity * mean[3],
             1e-5,
             self._std_weight_velocity * mean[3]]
-        motion_cov = np.diag(np.square(np.r_[std_pos, std_vel]))                    # 初始化噪声矩阵Q
+        motion_cov = np.diag(np.square(np.r_[std_pos, std_vel]))                    # 初始化系统噪声矩阵Q
 
         #mean = np.dot(self._motion_mat, mean)
         mean = np.dot(mean, self._motion_mat.T)                                     # x' = Fx, F为状态转移矩阵 // 得到t时刻的均值
@@ -167,11 +166,11 @@ class KalmanFilter(object):
             self._std_weight_position * mean[3],
             1e-1,
             self._std_weight_position * mean[3]]
-        innovation_cov = np.diag(np.square(std))                    # 初始化噪声矩阵R
+        innovation_cov = np.diag(np.square(std))                    # 初始化传感器噪声矩阵R
 
-        mean = np.dot(self._update_mat, mean)       				# 将均值向量映射到检测空间,即公式(3) Hx'
+        mean = np.dot(self._update_mat, mean)       				# 将均值向量映射到检测空间,即公式(3)中的 Hx'
         covariance = np.linalg.multi_dot((
-            self._update_mat, covariance, self._update_mat.T))      # 将协方差矩阵映射到检测空间，即HP'H(T)，公式(4) HP'H(T)
+            self._update_mat, covariance, self._update_mat.T))      # 将协方差矩阵映射到检测空间，即HP'H(T)，公式(4)中的 HP'H(T)
         return mean, covariance + innovation_cov
 
     def multi_predict(self, mean, covariance):
@@ -221,7 +220,7 @@ class KalmanFilter(object):
             self._std_weight_velocity * mean[:, 3]]
         sqr = np.square(np.r_[std_pos, std_vel]).T
 
-        # 初始化噪声矩阵Q
+        # 初始化系统噪声矩阵Q
         motion_cov = []
         for i in range(len(mean)):
             motion_cov.append(np.diag(sqr[i]))
@@ -259,7 +258,8 @@ class KalmanFilter(object):
         x = x' + Ky       (6)
         P = (I - KH)P'    (7)
         在公式3中，z为detection的均值向量，不包含速度变化值，即z=[cx, cy, r, h]，H称为测量矩阵，它将tracker的均值向量x'映射到检测空间，该公式计算detection和track的均值误差;
-        在公式4中，R为检测器的噪声矩阵，它是一个4x4的对角矩阵，对角线上的值分别为中心点两个坐标以及宽高的噪声，以任意值初始化，一般设置宽高的噪声大于中心点的噪声，该公式先将协方差矩阵P'映射到检测空间，然后再加上噪声矩阵R;
+        在公式4中，R为检测器的噪声矩阵，它是一个4x4的对角矩阵，对角线上的值分别为中心点两个坐标以及宽高的噪声，以任意值初始化，一般设置宽高的噪声大于中心点的噪声，
+        该公式先将协方差矩阵P'映射到检测空间，然后再加上噪声矩阵R;
         公式5计算卡尔曼增益K，卡尔曼增益用于估计误差的重要程度;
         公式6和公式7得到更新后的均值向量x和协方差矩阵P
         """
