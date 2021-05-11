@@ -2,25 +2,24 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
-import math
 import logging
-import numpy as np
+import math
 from os.path import join
 
+import numpy as np
 import torch
-from torch import nn
 import torch.nn.functional as F
 import torch.utils.model_zoo as model_zoo
+from torch import nn
 
-from .DCNv2_to_onnx.dcn_v2 import DCN
+from .DCNv2_new.dcn_v2 import DCN
 
 BN_MOMENTUM = 0.1
 logger = logging.getLogger(__name__)
 
 def get_model_url(data='imagenet', name='dla34', hash='ba72cf86'):
-    return join('http://dl.yf.io/dla/models', data, '{}-{}.pth'.format(name, hash))
-
+    #return join('http://dl.yf.io/dla/models', data, '{}-{}.pth'.format(name, hash))
+    return ('http://dl.yf.io/dla/models'+'/'+data+'/'+name+'-'+hash+'.pth')
 
 def conv3x3(in_planes, out_planes, stride=1):
     "3x3 convolution with padding"
@@ -297,6 +296,7 @@ class DLA(nn.Module):
             model_weights = torch.load(data + name)
         else:
             model_url = get_model_url(data, name, hash)
+            print("model_url:{}".format(model_url))
             model_weights = model_zoo.load_url(model_url)
         num_classes = len(model_weights[list(model_weights.keys())[-1]])
         self.fc = nn.Conv2d(
@@ -441,7 +441,15 @@ class DLASeg(nn.Module):
 
         self.ida_up = IDAUp(out_channel, channels[self.first_level:self.last_level], 
                             [2 ** i for i in range(self.last_level - self.first_level)])
-        
+
+        """
+        在将input经过backbone（DLA-34）之后，对于每个head结构，经过两层卷积得到输出（head_conv=256），
+        这里对fc的的初始化权重及heat map的初始bias进行设置
+        hm:conv2d(64,256,3,3),relu(),conv2d(256,n_category,1,1),分支输出: n_category×152×572，一个类别一个通道，其中每个点的值表示：是目标的概率有多大
+        wh:conv2d(64,256,3,3),relu(),conv2d(256,2,1,1),分支输出：2×152×572,所有类别用共同的预测宽度和高度
+        reg:conv2d(64,256,3,3),relu(),conv2d(256,2,1,1),分支输出：2×152×572,每个点的两个offset值表示，当前index为目标时hm输出位置的偏差
+        id:conv2d(64,256,3,3),relu(),conv2d(256,512,1,1),分支输出：512×152×572,当前index为目标时hm输出位置ReID特征
+        """
         self.heads = heads
         for head in self.heads:
             classes = self.heads[head]
@@ -477,8 +485,7 @@ class DLASeg(nn.Module):
         self.ida_up(y, 0, len(y))
 
         ###############################################  修改的部分 ############################################################
-        # 这里的修改是因为导出到onnx必须是返回数组，不能是dict（原版是dict）。仅此而已，并且顺便把sigmoid和maxpool做了，这样
-        # 后处理就简单许多了
+        # 这里的修改是因为导出到onnx必须是返回数组，不能是dict（原版是dict）。仅此而已，并且顺便把sigmoid和maxpool做了，这样后处理就简单许多了
         z = {}
         outputs = []
         for head in self.heads:
@@ -499,7 +506,8 @@ class DLASeg(nn.Module):
 
 def get_pose_net(num_layers, heads, head_conv=256, down_ratio=4):
   model = DLASeg('dla{}'.format(num_layers), heads,
-                 pretrained=False,
+                 pretrained=True,
+                 #pretrained=False,
                  down_ratio=down_ratio,
                  final_kernel=1,
                  last_level=5,

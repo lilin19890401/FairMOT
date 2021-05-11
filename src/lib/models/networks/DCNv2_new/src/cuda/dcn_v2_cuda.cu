@@ -8,7 +8,11 @@
 #include <THC/THCAtomics.cuh>
 #include <THC/THCDeviceUtils.cuh>
 
+#ifdef _WIN32
 THCState *state = at::globalContext().lazyInitCUDA();
+#else
+extern THCState *state;
+#endif
 
 // author: Charles Shang
 // https://github.com/torch/cunn/blob/master/lib/THCUNN/generic/SpatialConvolutionMM.cu

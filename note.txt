@@ -2,18 +2,17 @@
 2. clone and build original DCN2
 You may fail to compile DCNv2 when using Pytorch 1.x, because torch.utils.ffi is deprecated. Then replace DCNv2 using the original repo and [Solved] dcn_v2_cuda.obj : error LNK2001: unresolved external symbol state caused by extern THCState *state; by modifing the line DCNv2/blob/master/src/cuda/dcn_v2_cuda.cu#L11:
 
-//extern THCState *state;                           
-THCState *state = at::globalContext().lazyInitCUDA();   // Modified
+ 
 cd CenterNet\src\lib\models\networks
 rm -rf DCNv2
 git clone https://github.com/CharlesShang/DCNv2
 cd DCNv2
 
-vim cuda/dcn_va_cuda.cu
-"""
-# extern THCState *state;
-THCState *state = at::globalContext().lazyInitCUDA();
-"""
+#ifdef _WIN32
+THCState *state = at::globalContext().lazyInitCUDA();		// Modified
+#else
+extern THCState *state;
+#endif
 
 python setup.py build develop
 

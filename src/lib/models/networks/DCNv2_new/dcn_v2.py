@@ -9,11 +9,25 @@ from torch import nn
 from torch.autograd import Function
 from torch.nn.modules.utils import _pair
 from torch.autograd.function import once_differentiable
-
 import _ext as _backend
-
+import json
 
 class _DCNv2(Function):
+
+    ###############################################  修改的部分 ############################################################
+    @staticmethod
+    def symbolic(g, input, offset, mask, weight, bias, stride, padding, dilation, deformable_groups):
+        return g.op("Plugin", input, offset, mask, weight, bias, name_s="DCNv2", info_s=json.dumps({
+            "dilation": dilation,
+            "padding": padding,
+            "stride": stride,
+            "deformable_groups": deformable_groups
+        }))
+
+    ###############################################  ---------- ############################################################
+
+
+
     @staticmethod
     def forward(ctx, input, offset, mask, weight, bias,
                 stride, padding, dilation, deformable_groups):

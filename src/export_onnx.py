@@ -67,7 +67,7 @@ def load_model(model, model_path, optimizer=None, resume=False,
 
 
 model = net.get_pose_net(num_layers=34, heads={'hm': 1, 'wh': 2, 'id':512, 'reg': 2})
-model = load_model(model, "../models/all_dla34.pth")
+model = load_model(model, "../weights/all_dla34.pth")
 model.eval()
 model.cuda()
 # # https://github.com/xingyizhou/CenterNet/blob/master/readme/MODEL_ZOO.md 这里下载的
@@ -85,5 +85,5 @@ model.cuda()
 input = torch.zeros((1, 3, 608, 1088)).cuda()
 #
 # # 有个已经导出好的模型：http://zifuture.com:1000/fs/public_models/dladcnv2.onnx
-onnx.export(model, (input), "../models/all_dla34.onnx", output_names=["hm", "wh", "reg", "id", "hm_pool"], verbose=True)
+onnx.export(model, (input), "../weights/all_dla34.onnx", output_names=["hm", "wh", "reg", "id", "hm_pool"], verbose=True)
 #onnx.export(model, (input), "../models/all_dla34.onnx", output_names=["hm", "wh", "reg", "id"], verbose=True)
